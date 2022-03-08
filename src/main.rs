@@ -9,7 +9,20 @@ fn write_color(color: Color) -> io::Result<()> {
     write!(io::stdout(), "{} {} {}\n", (255.999 * color.x) as u32, (255.999 * color.y) as u32, (255.999 * color.z) as u32)
 }
 
+fn hit_sphere(center: &Point3, radius: f32, r: &Ray) -> bool {
+    let oc = r.orig - *center;
+    let a = Vec3::dot(&r.dir, &r.dir);
+    let b = 2.0 * Vec3::dot(&oc, &r.dir);
+    let c = Vec3::dot(&oc, &oc) - (radius * radius);
+    let discriminant = (b * b) - (4.0 * a * c);
+    return discriminant > 0.0;
+}
+
 fn ray_color(r: &Ray) -> Color {
+    let sphere_center = Point3::new(0.0, 0.0, -1.0);
+    if hit_sphere(&sphere_center, 0.5, r) {
+        return Color::new(1.0, 0.0, 0.0);
+    }
     let unit_direction = r.dir.unit_vector();
     let t = 0.5 * (unit_direction.y + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + (t * Color::new(0.5, 0.7, 1.0))
