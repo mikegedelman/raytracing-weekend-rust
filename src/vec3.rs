@@ -17,11 +17,15 @@ pub type Color = Vec3;
 
 impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Self{ x, y, z}
+        Self { x, y, z }
     }
 
     pub fn zero() -> Self {
-        Self{ x: 0.0, y: 0.0, z: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     pub fn length(&self) -> f32 {
@@ -37,7 +41,7 @@ impl Vec3 {
     }
 
     pub fn cross(u: &Self, v: &Self) -> Self {
-        Self{
+        Self {
             x: u.y * v.z - u.z * v.y,
             y: u.z * v.x - u.x * v.z,
             z: u.x * v.y - u.y * v.x,
@@ -59,7 +63,11 @@ impl Div<Vec3> for Vec3 {
     type Output = Self;
     #[inline]
     fn div(self, other: Self) -> Self {
-        Self{ x: self.x / other.x, y: self.y / other.y, z: self.z / other.z }
+        Self {
+            x: self.x / other.x,
+            y: self.y / other.y,
+            z: self.z / other.z,
+        }
     }
 }
 
@@ -76,7 +84,11 @@ impl Div<f32> for Vec3 {
     type Output = Self;
     #[inline]
     fn div(self, other: f32) -> Self {
-        Self{ x : self.x / other, y: self.y / other, z: self.z / other }
+        Self {
+            x: self.x / other,
+            y: self.y / other,
+            z: self.z / other,
+        }
     }
 }
 
@@ -93,7 +105,11 @@ impl Mul<Vec3> for Vec3 {
     type Output = Self;
     #[inline]
     fn mul(self, other: Self) -> Self {
-        Self{ x: self.x * other.y, y: self.y * other.y, z: self.z * other.z }
+        Self {
+            x: self.x * other.y,
+            y: self.y * other.y,
+            z: self.z * other.z,
+        }
     }
 }
 
@@ -158,7 +174,11 @@ impl Mul<Vec3> for f32 {
     type Output = Vec3;
     #[inline]
     fn mul(self, other: Vec3) -> Vec3 {
-        Vec3{ x: self * other.x, y: self * other.y, z: self * other.z }
+        Vec3 {
+            x: self * other.x,
+            y: self * other.y,
+            z: self * other.z,
+        }
     }
 }
 
@@ -166,7 +186,11 @@ impl Add for Vec3 {
     type Output = Self;
     #[inline]
     fn add(self, other: Self) -> Self {
-        Self{ x: self.x + other.x, y: self.y + other.y, z: self.z + other.z }
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
     }
 }
 
@@ -183,7 +207,11 @@ impl Sub for Vec3 {
     type Output = Self;
     #[inline]
     fn sub(self, other: Self) -> Self {
-        Self { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z }
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        }
     }
 }
 
@@ -201,6 +229,10 @@ impl Neg for Vec3 {
 
     #[inline]
     fn neg(self) -> Self {
-        Self { x: -self.x, y: -self.y, z: -self.z }
+        Self {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
     }
 }
