@@ -1,6 +1,5 @@
-use crate::vec3::*;
 use crate::ray::*;
-
+use crate::vec3::*;
 
 #[derive(Debug, PartialEq)]
 pub struct HitRecord {

@@ -1,5 +1,5 @@
-use crate::vec3::*;
 use crate::ray::*;
+use crate::vec3::*;
 
 pub struct Camera {
     origin: Point3,
@@ -30,7 +30,8 @@ impl Camera {
     }
 
     pub fn get_ray(&self, u: f32, v: f32) -> Ray {
-        let dir = self.lower_left_corner + (u * self.horizontal) + (v * self.vertical) - self.origin;
+        let dir =
+            self.lower_left_corner + (u * self.horizontal) + (v * self.vertical) - self.origin;
         Ray::new(self.origin, dir)
     }
 }
