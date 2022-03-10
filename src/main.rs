@@ -112,12 +112,15 @@ fn main() -> io::Result<()> {
     let elapsed = before.elapsed();
     eprintln!("Render time: {:.2?}", elapsed);
 
+    let before_write = Instant::now();
     write!(io::stdout(), "P3\n{} {}\n255\n", image_width, image_height);
     for row in rows {
         for color in row {
             write_color(color, samples_per_pixel);
         }
     }
+    let write_elapsed = before_write.elapsed();
+    eprintln!("Write time: {:.2?}", write_elapsed);
 
     Ok(())
 }
