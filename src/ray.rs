@@ -10,6 +10,7 @@ impl Ray {
         Ray { orig, dir }
     }
 
+    // Calculate P for P(t) = A + (b * t) where A is the origin of the ray, and b is the direction.
     pub fn at(&self, t: f32) -> Point3 {
         self.orig + t * self.dir
     }

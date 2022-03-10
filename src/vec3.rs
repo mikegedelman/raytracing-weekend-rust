@@ -84,6 +84,10 @@ impl Vec3 {
         Vec3::unit_vector(&Vec3::random_in_unit_sphere())
     }
 
+    pub fn reflect(n: &Vec3, v: &Vec3) -> Vec3 {
+        *v - (2.0 * Vec3::dot(v,n) * *n)
+    }
+
     // Member functions
     #[inline]
     pub fn length(&self) -> f32 {

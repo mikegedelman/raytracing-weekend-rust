@@ -1,4 +1,5 @@
 mod camera;
+mod material;
 mod hit;
 mod ray;
 mod util;
@@ -10,6 +11,7 @@ use std::time::Instant;
 
 use console::style;
 use indicatif::{HumanBytes, ParallelProgressIterator, ProgressBar};
+use rand::seq::index::sample;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
 
@@ -18,23 +20,29 @@ use hit::*;
 use ray::*;
 use util::*;
 use vec3::*;
+use material::*;
 
-fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color {
+
+
+fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color where <H as Hittable>::MaterialType: Material {
     if depth <= 0 {
-        return Color::new(0.0, 0.0, 0.0);
+        return Color::zero();
     }
 
+    // Calculate what to do if the ray hits an object in our scene
     for hittable in hittables {
         match hittable.hit(r, 0.001, INFINITY) {
             Some(rec) => {
-                let target = rec.p + rec.normal + Vec3::random_unit_vector();
-                let new_ray = Ray::new(rec.p, target - rec.p);
-                return 0.5 * ray_color(&new_ray, hittables, depth - 1);
+                return match rec.material.scatter(&r, &rec) {
+                    (Some(scattered_ray), attenuation) => attenuation * ray_color(&scattered_ray, hittables, depth - 1),
+                    (None, _) => Color::zero(),
+                };
             }
             _ => {}
         };
     }
 
+    // Background gradient
     let unit_direction = Vec3::unit_vector(&r.dir);
     let t = 0.5 * (unit_direction.y + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + (t * Color::new(0.5, 0.7, 1.0))
@@ -45,7 +53,7 @@ fn write_color(
     color: Color,
     samples_per_pixel: i32,
 ) -> io::Result<()> {
-    // sqrt: gamma correction is raise to the power of 1/gamma, and we're using gamma=2
+    // sqrt: gamma correction is raise to the power of 1/gamma, and we're using gamma=2, so pow(1/2) -> sqrt
     let scale = 1.0 / samples_per_pixel as f32;
     let r = f32::sqrt(color.x * scale);
     let b = f32::sqrt(color.y * scale);
@@ -62,48 +70,65 @@ fn write_color(
 
 fn main() -> io::Result<()> {
     println!("{} Setup...", style("[1/3]").bold().dim());
-    // Image
+    // Image parameters
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 1200;
+    let image_width = 600;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 500;
+    let samples_per_pixel = 200;
     let max_depth = 50;
 
     // Camera
     let camera = Camera::new();
 
-    // Render
-    let hittables = vec![
-        Sphere {
-            center: Point3::new(0.0, 0.0, -1.0),
-            radius: 0.5,
-        },
+    // Scene
+    let material_ground = Lambertian{ albedo: Color::new(0.8, 0.8, 0.0) };
+    let material_center = Lambertian{ albedo: Color::new(0.7, 0.3, 0.3) };
+    let material_left = Metal{ albedo: Color::new(0.8, 0.8, 0.8) };
+    let material_right = Metal{ albedo: Color::new(0.8, 0.6, 0.2) };
+
+    let hittables: Vec<Sphere<Lambertian>> = vec![
         Sphere {
             center: Point3::new(0.0, -100.5, -1.0),
             radius: 100.0,
+            material: Box::new(material_ground,)
         },
+        Sphere {
+            center: Point3::new(0.0, 0.0, -1.0),
+            radius: 0.5,
+            material: Box::new(material_center),
+        },
+        // Sphere {
+        //     center: Point3::new(-1.0, 0.0, -1.0),
+        //     radius: 0.5,
+        //     material: Box::new(material_left),
+        // },
+        // Sphere {
+        //     center: Point3::new(1.0, 0.0, -1.0),
+        //     radius: 0.5,
+        //     material: Box::new(material_right),
+        // },
     ];
 
+    // Render
     println!("{} Render...", style("[2/3]").bold().dim());
     let pb = ProgressBar::new(image_height as u64);
     let before_render = Instant::now();
     let range: Vec<i32> = (0..image_height).rev().collect();
     let rows: Vec<Vec<Vec3>> = range
-        .into_par_iter()
-        .progress_with(pb)
-        .map(|j| {
+        .into_par_iter() // Use Rayon to parallelize this iterator for basically no effort
+        .progress_with(pb) // Show a progress bar of rows
+        .map(|j| { // For each row..
             (0..image_width)
                 .into_iter()
-                .map(|i| {
-                    let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-                    for _ in 0..samples_per_pixel {
+                .map(|i| { // For each column..
+                    // Run $samples_per_pixel rays through the pixel, at random positions within the pixel
+                    (0..samples_per_pixel).fold(Color::new(0.0, 0.0, 0.0), |a, _| {
                         let u = (i as f32 + random_f32()) / (image_width as f32 - 1.0);
                         let v = (j as f32 + random_f32()) / (image_height as f32 - 1.0);
 
-                        let r = camera.get_ray(u, v);
-                        pixel_color += ray_color(&r, &hittables, max_depth);
-                    }
-                    pixel_color
+                        let r = camera.get_ray(u, v); // Get a vector representing the ray out of the camera.
+                        a + ray_color(&r, &hittables, max_depth) // Determine the color of the ray reflected back at the camera
+                    })
                 })
                 .collect()
         })
