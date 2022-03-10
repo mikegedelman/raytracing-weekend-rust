@@ -103,7 +103,10 @@ impl fmt::Display for Vec3 {
 }
 
 impl Sum for Vec3 {
-    fn sum<I>(iter: I) -> Self where I: Iterator<Item = Vec3> {
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Vec3>,
+    {
         iter.fold(Vec3::zero(), |a, b| a + b)
     }
 }

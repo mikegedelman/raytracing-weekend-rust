@@ -4,16 +4,18 @@ mod ray;
 mod util;
 mod vec3;
 
+use std::fs::File;
+use std::io::{self, BufWriter, Seek, Write};
 use std::time::Instant;
 
+use console::style;
+use indicatif::{HumanBytes, ParallelProgressIterator, ProgressBar};
+use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
-
 
 use camera::*;
 use hit::*;
-use rand::seq::index::sample;
 use ray::*;
-use std::io::{self, Write};
 use util::*;
 use vec3::*;
 
@@ -38,7 +40,11 @@ fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color {
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + (t * Color::new(0.5, 0.7, 1.0))
 }
 
-fn write_color(color: Color, samples_per_pixel: i32) -> io::Result<()> {
+fn write_color(
+    w: &mut BufWriter<&mut File>,
+    color: Color,
+    samples_per_pixel: i32,
+) -> io::Result<()> {
     // sqrt: gamma correction is raise to the power of 1/gamma, and we're using gamma=2
     let scale = 1.0 / samples_per_pixel as f32;
     let r = f32::sqrt(color.x * scale);
@@ -46,7 +52,7 @@ fn write_color(color: Color, samples_per_pixel: i32) -> io::Result<()> {
     let g = f32::sqrt(color.z * scale);
 
     write!(
-        io::stdout(),
+        w,
         "{} {} {}\n",
         (256.0 * clamp(r, 0.0, 0.999)) as u32,
         (256.0 * clamp(b, 0.0, 0.999)) as u32,
@@ -55,6 +61,7 @@ fn write_color(color: Color, samples_per_pixel: i32) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
+    println!("{} Setup...", style("[1/3]").bold().dim());
     // Image
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 1200;
@@ -66,7 +73,6 @@ fn main() -> io::Result<()> {
     let camera = Camera::new();
 
     // Render
-
     let hittables = vec![
         Sphere {
             center: Point3::new(0.0, 0.0, -1.0),
@@ -78,17 +84,18 @@ fn main() -> io::Result<()> {
         },
     ];
 
-    let before = Instant::now();
-
-    let mut rows = vec![];
-    for j in (0..image_height).rev() {
-        // write!(io::stderr(), "\r Scanlines remaining: {} \n", j);
-        let row_colors: Vec<Vec3> = (0..image_width).into_par_iter().map(|i| {
-            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-
-            // let mut pixel_color: Vec3 = (0..samples_per_pixel)
-            //     .into_iter()
-            //     .map(|_| {
+    println!("{} Render...", style("[2/3]").bold().dim());
+    let pb = ProgressBar::new(image_height as u64);
+    let before_render = Instant::now();
+    let range: Vec<i32> = (0..image_height).rev().collect();
+    let rows: Vec<Vec<Vec3>> = range
+        .into_par_iter()
+        .progress_with(pb)
+        .map(|j| {
+            (0..image_width)
+                .into_iter()
+                .map(|i| {
+                    let mut pixel_color = Color::new(0.0, 0.0, 0.0);
                     for _ in 0..samples_per_pixel {
                         let u = (i as f32 + random_f32()) / (image_width as f32 - 1.0);
                         let v = (j as f32 + random_f32()) / (image_height as f32 - 1.0);
@@ -96,31 +103,35 @@ fn main() -> io::Result<()> {
                         let r = camera.get_ray(u, v);
                         pixel_color += ray_color(&r, &hittables, max_depth);
                     }
-                    // ray_color(&r, &hittables, max_depth)
-                // })
+                    pixel_color
+                })
+                .collect()
+        })
+        .collect();
 
-                // .sum();
+    let render_elapsed = before_render.elapsed();
 
-            // let color = Color::new(r, g, b);
-            // write_color(pixel_color, samples_per_pixel);
-            pixel_color
-        }).collect();
-        rows.push(row_colors);
-        eprintln!("Scanline {} completed", j);
-    }
-
-    let elapsed = before.elapsed();
-    eprintln!("Render time: {:.2?}", elapsed);
-
+    println!("{} Write to disk...", style("[3/3]").bold().dim());
     let before_write = Instant::now();
-    write!(io::stdout(), "P3\n{} {}\n255\n", image_width, image_height);
+    let mut f = File::create("./image.ppm").unwrap();
+    let mut writer = BufWriter::new(&mut f);
+
+    write!(&mut writer, "P3\n{} {}\n255\n", image_width, image_height)?;
     for row in rows {
         for color in row {
-            write_color(color, samples_per_pixel);
+            write_color(&mut writer, color, samples_per_pixel)?;
         }
     }
+    writer.flush()?;
     let write_elapsed = before_write.elapsed();
-    eprintln!("Write time: {:.2?}", write_elapsed);
+
+    println!("Complete!");
+    println!("Render time: {:?}", style(render_elapsed).bold());
+    println!(
+        "File write time: {} in {:?}",
+        style(HumanBytes(writer.stream_position().unwrap())).bold(),
+        style(write_elapsed).bold()
+    );
 
     Ok(())
 }
