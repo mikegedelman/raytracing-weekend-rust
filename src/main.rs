@@ -4,7 +4,10 @@ mod ray;
 mod util;
 mod vec3;
 
+use std::time::Instant;
+
 use rayon::prelude::*;
+
 
 use camera::*;
 use hit::*;
@@ -54,9 +57,9 @@ fn write_color(color: Color, samples_per_pixel: i32) -> io::Result<()> {
 fn main() -> io::Result<()> {
     // Image
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 800;
+    let image_width = 1200;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 200;
+    let samples_per_pixel = 500;
     let max_depth = 50;
 
     // Camera
@@ -74,6 +77,8 @@ fn main() -> io::Result<()> {
             radius: 100.0,
         },
     ];
+
+    let before = Instant::now();
 
     let mut rows = vec![];
     for j in (0..image_height).rev() {
@@ -103,6 +108,9 @@ fn main() -> io::Result<()> {
         rows.push(row_colors);
         eprintln!("Scanline {} completed", j);
     }
+
+    let elapsed = before.elapsed();
+    eprintln!("Render time: {:.2?}", elapsed);
 
     write!(io::stdout(), "P3\n{} {}\n255\n", image_width, image_height);
     for row in rows {
