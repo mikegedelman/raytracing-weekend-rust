@@ -21,7 +21,7 @@ use ray::*;
 use util::*;
 use vec3::*;
 
-fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32,) -> Option<HitRecord> {
+fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
     let mut hit_rec = Option::None;
     let mut closest_so_far = t_max;
 
@@ -86,13 +86,18 @@ fn main() -> io::Result<()> {
     println!("{} Setup...", style("[1/3]").bold().dim());
     // Image parameters
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 500;
+    let image_width = 400;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
     let max_depth = 50;
 
     // Camera
-    let camera = Camera::new();
+    // let lookfrom = Point3::new(-2.0, 2.0, 1.0);
+    let lookfrom = Point3::new(0.0, 0.0, 0.0);
+    let lookat = Point3::new(0.0, 0.0, -1.0);
+    let vup = Point3::new(0.0, 1.0, 0.0);
+    let fov: f32 = 90.0;
+    let camera = Camera::new(lookfrom, lookat, vup, fov, aspect_ratio);
 
     // Scene
     let material_ground = Lambertian {

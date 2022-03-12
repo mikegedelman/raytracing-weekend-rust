@@ -19,9 +19,9 @@ pub struct Lambertian {
 impl MaterialBehavior for Lambertian {
     fn scatter(&self, _: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
         let mut scatter_direction = rec.normal + Vec3::random_unit_vector();
-        // if scatter_direction.near_zero() {
-        //     scatter_direction = rec.normal;
-        // }
+        if scatter_direction.near_zero() {
+            scatter_direction = rec.normal;
+        }
 
         let scattered = Ray::new(rec.p, scatter_direction);
         (Option::Some(scattered), self.albedo)
@@ -54,10 +54,4 @@ impl MaterialBehavior for Metal {
 pub enum Material {
     Lambertian,
     Metal,
-}
-
-fn test() {
-    let l = Lambertian{ albedo: Color::zero() };
-    // let m: Material = l.into();
-    // m.scatter(&Ray::new(Vec3::zero(), HitRecord{}))
 }

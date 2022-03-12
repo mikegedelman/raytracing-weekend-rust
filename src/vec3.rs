@@ -84,7 +84,7 @@ impl Vec3 {
         Vec3::unit_vector(&Vec3::random_in_unit_sphere())
     }
 
-    pub fn reflect(nr: &Vec3, v: &Vec3) -> Vec3 {
+    pub fn reflect(v: &Vec3, nr: &Vec3) -> Vec3 {
         let n = *nr;
         (*v) - (2.0 * Vec3::dot(v, nr) * n)
     }
@@ -101,9 +101,9 @@ impl Vec3 {
     }
 
     pub fn near_zero(&self) -> bool {
-        f32::abs(self.x) < f32::MIN_POSITIVE
-            && f32::abs(self.y) < f32::MIN_POSITIVE
-            && f32::abs(self.z) < f32::MIN_POSITIVE
+        self.x.abs() < f32::MIN_POSITIVE
+            && self.y.abs() < f32::MIN_POSITIVE
+            && self.z.abs() < f32::MIN_POSITIVE
     }
 }
 
@@ -169,7 +169,7 @@ impl Mul<Vec3> for Vec3 {
     #[inline]
     fn mul(self, other: Self) -> Self {
         Self {
-            x: self.x * other.y,
+            x: self.x * other.x,
             y: self.y * other.y,
             z: self.z * other.z,
         }
@@ -297,5 +297,13 @@ impl Neg for Vec3 {
             y: -self.y,
             z: -self.z,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
     }
 }
