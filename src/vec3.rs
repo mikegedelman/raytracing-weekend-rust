@@ -35,7 +35,7 @@ impl Vec3 {
 
     #[inline]
     pub fn dot(u: &Self, v: &Self) -> f32 {
-        u.x * v.x + u.y * v.y + u.z * v.z
+        (u.x * v.x) + (u.y * v.y) + (u.z * v.z)
     }
 
     #[inline]
@@ -49,7 +49,7 @@ impl Vec3 {
 
     #[inline]
     pub fn unit_vector(v: &Self) -> Self {
-        *v / v.length()
+        (*v) / v.length()
     }
 
     #[inline]
@@ -84,8 +84,9 @@ impl Vec3 {
         Vec3::unit_vector(&Vec3::random_in_unit_sphere())
     }
 
-    pub fn reflect(n: &Vec3, v: &Vec3) -> Vec3 {
-        *v - (2.0 * Vec3::dot(v,n) * *n)
+    pub fn reflect(nr: &Vec3, v: &Vec3) -> Vec3 {
+        let n = *nr;
+        (*v) - (2.0 * Vec3::dot(v, nr) * n)
     }
 
     // Member functions
@@ -97,6 +98,12 @@ impl Vec3 {
     #[inline]
     pub fn length_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
+    }
+
+    pub fn near_zero(&self) -> bool {
+        f32::abs(self.x) < f32::MIN_POSITIVE
+            && f32::abs(self.y) < f32::MIN_POSITIVE
+            && f32::abs(self.z) < f32::MIN_POSITIVE
     }
 }
 

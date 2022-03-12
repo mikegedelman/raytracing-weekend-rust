@@ -1,6 +1,6 @@
 mod camera;
-mod material;
 mod hit;
+mod material;
 mod ray;
 mod util;
 mod vec3;
@@ -11,36 +11,50 @@ use std::time::Instant;
 
 use console::style;
 use indicatif::{HumanBytes, ParallelProgressIterator, ProgressBar};
-use rand::seq::index::sample;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
 
 use camera::*;
 use hit::*;
+use material::*;
 use ray::*;
 use util::*;
 use vec3::*;
-use material::*;
 
+fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32,) -> Option<HitRecord> {
+    let mut hit_rec = Option::None;
+    let mut closest_so_far = t_max;
 
+    for hittable in hittables {
+        match hittable.hit(r, t_min, closest_so_far) {
+            Some(rec) => {
+                closest_so_far = rec.t;
+                hit_rec = Option::Some(rec);
+            },
+            None => {},
+        }
+    }
 
-fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color where <H as Hittable>::MaterialType: Material {
+    return hit_rec;
+}
+
+fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color {
     if depth <= 0 {
         return Color::zero();
     }
 
-    // Calculate what to do if the ray hits an object in our scene
-    for hittable in hittables {
-        match hittable.hit(r, 0.001, INFINITY) {
-            Some(rec) => {
-                return match rec.material.scatter(&r, &rec) {
-                    (Some(scattered_ray), attenuation) => attenuation * ray_color(&scattered_ray, hittables, depth - 1),
-                    (None, _) => Color::zero(),
-                };
+    match hit_list(hittables, r, 0.001, INFINITY) {
+        Some(rec) => {
+            let m = rec.material;
+            return match m.scatter(&r, &rec) {
+                (Some(scattered_ray), attenuation) => {
+                    attenuation * ray_color(&scattered_ray, hittables, depth - 1)
+                }
+                (None, _) => Color::zero(),
             }
-            _ => {}
-        };
-    }
+        },
+        None => {},
+    };
 
     // Background gradient
     let unit_direction = Vec3::unit_vector(&r.dir);
@@ -72,41 +86,49 @@ fn main() -> io::Result<()> {
     println!("{} Setup...", style("[1/3]").bold().dim());
     // Image parameters
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 600;
+    let image_width = 500;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 200;
+    let samples_per_pixel = 100;
     let max_depth = 50;
 
     // Camera
     let camera = Camera::new();
 
     // Scene
-    let material_ground = Lambertian{ albedo: Color::new(0.8, 0.8, 0.0) };
-    let material_center = Lambertian{ albedo: Color::new(0.7, 0.3, 0.3) };
-    let material_left = Metal{ albedo: Color::new(0.8, 0.8, 0.8) };
-    let material_right = Metal{ albedo: Color::new(0.8, 0.6, 0.2) };
+    let material_ground = Lambertian {
+        albedo: Color::new(0.8, 0.8, 0.0),
+    };
+    let material_center = Lambertian {
+        albedo: Color::new(0.7, 0.3, 0.3),
+    };
+    let material_left = Metal {
+        albedo: Color::new(0.8, 0.8, 0.8),
+    };
+    let material_right = Metal {
+        albedo: Color::new(0.1, 0.1, 0.1),
+    };
 
-    let hittables: Vec<Sphere<Lambertian>> = vec![
+    let hittables: Vec<Sphere> = vec![
         Sphere {
-            center: Point3::new(0.0, -100.5, -1.0),
-            radius: 100.0,
-            material: Box::new(material_ground,)
+            center: Point3::new(1.0, 0.0, -1.0),
+            radius: 0.5,
+            material: material_right.into(),
         },
         Sphere {
             center: Point3::new(0.0, 0.0, -1.0),
             radius: 0.5,
-            material: Box::new(material_center),
+            material: material_center.into(),
         },
-        // Sphere {
-        //     center: Point3::new(-1.0, 0.0, -1.0),
-        //     radius: 0.5,
-        //     material: Box::new(material_left),
-        // },
-        // Sphere {
-        //     center: Point3::new(1.0, 0.0, -1.0),
-        //     radius: 0.5,
-        //     material: Box::new(material_right),
-        // },
+        Sphere {
+            center: Point3::new(-1.0, 0.0, -1.0),
+            radius: 0.5,
+            material: material_left.into(),
+        },
+        Sphere {
+            center: Point3::new(0.0, -100.5, -0.5),
+            radius: 100.0,
+            material: material_ground.into(),
+        },
     ];
 
     // Render
@@ -117,10 +139,12 @@ fn main() -> io::Result<()> {
     let rows: Vec<Vec<Vec3>> = range
         .into_par_iter() // Use Rayon to parallelize this iterator for basically no effort
         .progress_with(pb) // Show a progress bar of rows
-        .map(|j| { // For each row..
+        .map(|j| {
+            // For each row..
             (0..image_width)
                 .into_iter()
-                .map(|i| { // For each column..
+                .map(|i| {
+                    // For each column..
                     // Run $samples_per_pixel rays through the pixel, at random positions within the pixel
                     (0..samples_per_pixel).fold(Color::new(0.0, 0.0, 0.0), |a, _| {
                         let u = (i as f32 + random_f32()) / (image_width as f32 - 1.0);

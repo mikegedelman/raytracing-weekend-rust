@@ -1,19 +1,28 @@
-use crate::vec3::*;
-use crate::ray::*;
-use crate::hit::*;
+use enum_dispatch::enum_dispatch;
 
-pub trait Material: Sized {
-    fn scatter(&self, ray: &Ray, rec: &HitRecord<Self>) -> (Option<Ray>, Color);
+use crate::hit::*;
+use crate::ray::*;
+use crate::vec3::*;
+
+
+#[enum_dispatch]
+pub trait MaterialBehavior: Sized {
+    fn scatter(&self, ray: &Ray, rec: &HitRecord) -> (Option<Ray>, Color);
 }
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct Lambertian {
     pub albedo: Color,
 }
 
-impl Material for Lambertian {
-    fn scatter(&self, _: &Ray, rec: &HitRecord<Self>) -> (Option<Ray>, Color) {
-        let scatter_direction = rec.normal + Vec3::random_unit_vector();
+impl MaterialBehavior for Lambertian {
+    fn scatter(&self, _: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
+        let mut scatter_direction = rec.normal + Vec3::random_unit_vector();
+        // if scatter_direction.near_zero() {
+        //     scatter_direction = rec.normal;
+        // }
+
         let scattered = Ray::new(rec.p, scatter_direction);
         (Option::Some(scattered), self.albedo)
     }
@@ -24,8 +33,8 @@ pub struct Metal {
     pub albedo: Color,
 }
 
-impl Material for Metal {
-    fn scatter(&self, ray: &Ray, rec: &HitRecord<Self>) -> (Option<Ray>, Color) {
+impl MaterialBehavior for Metal {
+    fn scatter(&self, ray: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
         let reflected = Vec3::reflect(&Vec3::unit_vector(&ray.dir), &rec.normal);
         let scattered = Ray::new(rec.p, reflected);
 
@@ -35,4 +44,20 @@ impl Material for Metal {
             (Option::None, self.albedo)
         }
     }
+}
+
+
+
+// #[derive(Debug, PartialEq)]
+#[derive(Clone, Copy)]
+#[enum_dispatch(MaterialBehavior)]
+pub enum Material {
+    Lambertian,
+    Metal,
+}
+
+fn test() {
+    let l = Lambertian{ albedo: Color::zero() };
+    // let m: Material = l.into();
+    // m.scatter(&Ray::new(Vec3::zero(), HitRecord{}))
 }

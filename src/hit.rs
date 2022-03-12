@@ -1,33 +1,29 @@
+use crate::material::*;
 use crate::ray::*;
 use crate::vec3::*;
-use crate::material::*;
 
-
-#[derive(Debug, PartialEq)]
-pub struct HitRecord<M: Material> {
+// #[derive(Debug, PartialEq)]
+pub struct HitRecord {
     pub p: Point3,        // Point3 where the ray hit the hittable
     pub normal: Vec3,     // Normal pointing outwards from the object at p
     pub t: f32,           // ?? not used yet
     pub front_face: bool, // ?? not used yet
-    pub material: M,
+    pub material: Material,
 }
 
 pub trait Hittable {
-    type MaterialType;
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<Self::MaterialType>> where <Self as Hittable>::MaterialType: Material;
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Sphere<M: Material> {
+// #[derive(Debug, PartialEq)]
+pub struct Sphere {
     pub center: Point3,
     pub radius: f32,
-    pub material: Box<M>,
+    pub material: Material,
 }
 
-impl<M: Material + Copy> Hittable for Sphere<M> {
-    type MaterialType = M;
-
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<M>> {
+impl Hittable for Sphere{
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         // Calculate the discriminant (the part under the sqrt) of the quadratic equation.
         let oc = r.orig - self.center;
         let a = r.dir.length_squared();
@@ -56,18 +52,15 @@ impl<M: Material + Copy> Hittable for Sphere<M> {
 
         // Check whether the ray is moving the same direction as the outward normal.
         let outward_normal = (p - self.center) / self.radius;
-        let (normal, front_face) = if Vec3::dot(&r.dir, &outward_normal) > 0.0 {
-            (-outward_normal, false) // ???
-        } else {
-            (outward_normal, true)
-        };
+        let front_face = Vec3::dot(&r.dir, &outward_normal) < 0.0;
+        let normal = if front_face { outward_normal } else { -outward_normal };
 
         return Option::Some(HitRecord {
             t: root,
             p,
             normal,
             front_face,
-            material: *self.material,
+            material: self.material.into(),
         });
     }
 }
