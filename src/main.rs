@@ -85,65 +85,106 @@ fn write_color(
 fn main() -> io::Result<()> {
     println!("{} Setup...", style("[1/3]").bold().dim());
     // Image parameters
-    let aspect_ratio = 16.0 / 9.0;
+    let aspect_ratio = 3.0 / 2.0;
     let image_width = 400;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
     let max_depth = 50;
 
     // Camera
-    let lookfrom = Point3::new(3.0, 3.0, 2.0);
+    let lookfrom = Point3::new(13.0, 2.0, 3.0);
     // let lookfrom = Point3::new(0.0, 0.0, 0.0);
-    let lookat = Point3::new(0.0, 0.0, -1.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
     let vup = Point3::new(0.0, 1.0, 0.0);
     let fov = 20.0;
-    let dist_to_focus = (lookfrom - lookat).length();
-    let aperture = 2.0;
+    let dist_to_focus = 10.0;
+    let aperture = 0.1;
 
     let camera = Camera::new(lookfrom, lookat, vup, fov, aspect_ratio, aperture, dist_to_focus);
 
     // Scene
-    let material_ground = Lambertian {
-        albedo: Color::new(0.8, 0.8, 0.0),
-    };
-    let material_center = Lambertian {
-        albedo: Color::new(0.1, 0.2, 0.7),
-    };
-    let material_left = Dialectric {
-        index_of_refraction: 1.5,
-    };
-    let material_right = Metal {
-        albedo: Color::new(0.8, 0.8, 0.8),
-        fuzz: 0.3,
-    };
+    let mut world = vec![];
+    world.push(Sphere {
+        center: Point3::new(0.0, -1000.0, 0.0),
+        radius: 1000.0,
+        material: Lambertian {
+            albedo: Color::new(0.5, 0.5, 0.5),
+        }.into(),
+    });
+    
+    // for a in -11..11 {
+    //     for b in -11..11 {
+    //         let choose_mat = random_f32();
 
-    let hittables: Vec<Sphere> = vec![
-        Sphere {
-            center: Point3::new(1.0, 0.0, -1.0),
-            radius: 0.5,
-            material: material_right.into(),
-        },
-        Sphere {
-            center: Point3::new(0.0, 0.0, -1.0),
-            radius: 0.5,
-            material: material_center.into(),
-        },
-        Sphere {
-            center: Point3::new(-1.0, 0.0, -1.0),
-            radius: 0.5,
-            material: material_left.into(),
-        },
-        Sphere {
-            center: Point3::new(-1.0, 0.0, -1.0),
-            radius: -0.45,
-            material: material_left.into(),
-        },
-        Sphere {
-            center: Point3::new(0.0, -100.5, -0.5),
-            radius: 100.0,
-            material: material_ground.into(),
-        },
-    ];
+    //         let center = Point3::new(
+    //             a as f32 + 0.9 * random_f32(),
+    //             0.2,
+    //             b as f32 + 0.9 + random_f32(),
+    //         );
+    //         let radius = 0.2;
+
+    //         if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+    //             if choose_mat < 0.8 {
+    //                 // diffuse
+    //                 let albedo = Color::random() * Color::random();
+    //                 let material = Lambertian {
+    //                     albedo,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             } else if choose_mat < 0.95 {
+    //                 // metal
+    //                 let albedo = Color::random_range(0.5, 1.0);
+    //                 let fuzz = random_f32_range(0.0, 0.5);
+    //                 let material = Metal {
+    //                     albedo,
+    //                     fuzz,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             } else {
+    //                 // glass
+    //                 let material = Dialectric {
+    //                     index_of_refraction: 1.5,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             }
+    //         }
+    //     }
+    // }
+
+    world.push(Sphere {
+        center: Point3::new(0.0, 1.0, 0.0),
+        radius: 1.0,
+        material: Dialectric {
+            index_of_refraction: 1.5,
+        }.into(),
+    });
+    world.push(Sphere {
+        center: Point3::new(-4.0, 1.0, 0.0),
+        radius: 1.0,
+        material: Lambertian {
+            albedo: Color::new(0.4, 0.2, 0.1),
+        }.into(),
+    });
+    world.push(Sphere {
+        center: Point3::new(4.0, 1.0, 0.0),
+        radius: 1.0,
+        material: Metal {
+            albedo: Color::new(0.7, 0.6, 0.5),
+            fuzz: 0.0,
+        }.into(),
+    });
 
     // Render
     println!("{} Render...", style("[2/3]").bold().dim());
@@ -165,7 +206,7 @@ fn main() -> io::Result<()> {
                         let v = (j as f32 + random_f32()) / (image_height as f32 - 1.0);
 
                         let r = camera.get_ray(u, v); // Get a vector representing the ray out of the camera.
-                        a + ray_color(&r, &hittables, max_depth) // Determine the color of the ray reflected back at the camera
+                        a + ray_color(&r, &world, max_depth) // Determine the color of the ray reflected back at the camera
                     })
                 })
                 .collect()
