@@ -92,25 +92,29 @@ fn main() -> io::Result<()> {
     let max_depth = 50;
 
     // Camera
-    // let lookfrom = Point3::new(-2.0, 2.0, 1.0);
-    let lookfrom = Point3::new(0.0, 0.0, 0.0);
+    let lookfrom = Point3::new(3.0, 3.0, 2.0);
+    // let lookfrom = Point3::new(0.0, 0.0, 0.0);
     let lookat = Point3::new(0.0, 0.0, -1.0);
     let vup = Point3::new(0.0, 1.0, 0.0);
-    let fov: f32 = 90.0;
-    let camera = Camera::new(lookfrom, lookat, vup, fov, aspect_ratio);
+    let fov = 20.0;
+    let dist_to_focus = (lookfrom - lookat).length();
+    let aperture = 2.0;
+
+    let camera = Camera::new(lookfrom, lookat, vup, fov, aspect_ratio, aperture, dist_to_focus);
 
     // Scene
     let material_ground = Lambertian {
         albedo: Color::new(0.8, 0.8, 0.0),
     };
     let material_center = Lambertian {
-        albedo: Color::new(0.7, 0.3, 0.3),
+        albedo: Color::new(0.1, 0.2, 0.7),
     };
-    let material_left = Metal {
-        albedo: Color::new(0.8, 0.8, 0.8),
+    let material_left = Dialectric {
+        index_of_refraction: 1.5,
     };
     let material_right = Metal {
-        albedo: Color::new(0.1, 0.1, 0.1),
+        albedo: Color::new(0.8, 0.8, 0.8),
+        fuzz: 0.3,
     };
 
     let hittables: Vec<Sphere> = vec![
@@ -127,6 +131,11 @@ fn main() -> io::Result<()> {
         Sphere {
             center: Point3::new(-1.0, 0.0, -1.0),
             radius: 0.5,
+            material: material_left.into(),
+        },
+        Sphere {
+            center: Point3::new(-1.0, 0.0, -1.0),
+            radius: -0.45,
             material: material_left.into(),
         },
         Sphere {

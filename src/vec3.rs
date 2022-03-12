@@ -80,6 +80,17 @@ impl Vec3 {
         }
     }
 
+
+    pub fn random_in_unit_disk() -> Vec3 {
+        loop {
+            let p = Vec3::new(random_f32_range(-1.0, 1.0), random_f32_range(-1.0, 1.0), 0.0);
+            if p.length_squared() >= 1.0 {
+                continue;
+            }
+            return p;
+        }
+    }
+
     pub fn random_unit_vector() -> Vec3 {
         Vec3::unit_vector(&Vec3::random_in_unit_sphere())
     }
@@ -87,6 +98,17 @@ impl Vec3 {
     pub fn reflect(v: &Vec3, nr: &Vec3) -> Vec3 {
         let n = *nr;
         (*v) - (2.0 * Vec3::dot(v, nr) * n)
+    }
+
+    pub fn refract(uvr: &Vec3, nr: &Vec3, etai_over_etat: f32) -> Vec3 {
+        let uv = *uvr;
+        let n = *nr;
+
+        let cos_theta = f32::min(Vec3::dot(&(-uv), &n), 1.0);
+        let r_out_perp = etai_over_etat * (uv + cos_theta*n);
+        let r_out_parallel = -f32::sqrt((1.0 - r_out_perp.length_squared()).abs()) * n;
+
+        r_out_perp + r_out_parallel
     }
 
     // Member functions
