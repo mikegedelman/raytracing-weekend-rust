@@ -86,9 +86,9 @@ fn main() -> io::Result<()> {
     println!("{} Setup...", style("[1/3]").bold().dim());
     // Image parameters
     let aspect_ratio = 3.0 / 2.0;
-    let image_width = 400;
+    let image_width = 1200;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 100;
+    let samples_per_pixel = 500;
     let max_depth = 50;
 
     // Camera
@@ -112,56 +112,56 @@ fn main() -> io::Result<()> {
         }.into(),
     });
     
-    // for a in -11..11 {
-    //     for b in -11..11 {
-    //         let choose_mat = random_f32();
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = random_f32();
 
-    //         let center = Point3::new(
-    //             a as f32 + 0.9 * random_f32(),
-    //             0.2,
-    //             b as f32 + 0.9 + random_f32(),
-    //         );
-    //         let radius = 0.2;
+            let center = Point3::new(
+                a as f32 + 0.9 * random_f32(),
+                0.2,
+                b as f32 + 0.9 + random_f32(),
+            );
+            let radius = 0.2;
 
-    //         if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
-    //             if choose_mat < 0.8 {
-    //                 // diffuse
-    //                 let albedo = Color::random() * Color::random();
-    //                 let material = Lambertian {
-    //                     albedo,
-    //                 };
-    //                 world.push(Sphere {
-    //                     center,
-    //                     radius,
-    //                     material: material.into(),
-    //                 });
-    //             } else if choose_mat < 0.95 {
-    //                 // metal
-    //                 let albedo = Color::random_range(0.5, 1.0);
-    //                 let fuzz = random_f32_range(0.0, 0.5);
-    //                 let material = Metal {
-    //                     albedo,
-    //                     fuzz,
-    //                 };
-    //                 world.push(Sphere {
-    //                     center,
-    //                     radius,
-    //                     material: material.into(),
-    //                 });
-    //             } else {
-    //                 // glass
-    //                 let material = Dialectric {
-    //                     index_of_refraction: 1.5,
-    //                 };
-    //                 world.push(Sphere {
-    //                     center,
-    //                     radius,
-    //                     material: material.into(),
-    //                 });
-    //             }
-    //         }
-    //     }
-    // }
+            if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                if choose_mat < 0.8 {
+                    // diffuse
+                    let albedo = Color::random() * Color::random();
+                    let material = Lambertian {
+                        albedo,
+                    };
+                    world.push(Sphere {
+                        center,
+                        radius,
+                        material: material.into(),
+                    });
+                } else if choose_mat < 0.95 {
+                    // metal
+                    let albedo = Color::random_range(0.5, 1.0);
+                    let fuzz = random_f32_range(0.0, 0.5);
+                    let material = Metal {
+                        albedo,
+                        fuzz,
+                    };
+                    world.push(Sphere {
+                        center,
+                        radius,
+                        material: material.into(),
+                    });
+                } else {
+                    // glass
+                    let material = Dialectric {
+                        index_of_refraction: 1.5,
+                    };
+                    world.push(Sphere {
+                        center,
+                        radius,
+                        material: material.into(),
+                    });
+                }
+            }
+        }
+    }
 
     world.push(Sphere {
         center: Point3::new(0.0, 1.0, 0.0),
