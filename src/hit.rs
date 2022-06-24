@@ -3,12 +3,12 @@ use crate::ray::*;
 use crate::vec3::*;
 
 // #[derive(Debug, PartialEq)]
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     pub p: Point3,        // Point3 where the ray hit the hittable
     pub normal: Vec3,     // Normal pointing outwards from the object at p
     pub t: f32,           // ?? not used yet
     pub front_face: bool, // ?? not used yet
-    pub material: Material,
+    pub material: &'a (dyn Material + 'a),
 }
 
 pub trait Hittable {
@@ -16,13 +16,13 @@ pub trait Hittable {
 }
 
 // #[derive(Debug, PartialEq)]
-pub struct Sphere {
+pub struct Sphere<'a> {
     pub center: Point3,
     pub radius: f32,
-    pub material: Material,
+    pub material: &'a (dyn Material + 'a),
 }
 
-impl Hittable for Sphere{
+impl<'a> Hittable for Sphere<'a> {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         // Calculate the discriminant (the part under the sqrt) of the quadratic equation.
         let oc = r.orig - self.center;

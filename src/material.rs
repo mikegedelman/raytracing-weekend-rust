@@ -1,13 +1,10 @@
-use enum_dispatch::enum_dispatch;
-
 use crate::hit::*;
 use crate::ray::*;
 use crate::vec3::*;
 use crate::util::random_f32;
 
 
-#[enum_dispatch]
-pub trait MaterialBehavior: Sized {
+pub trait Material {
     fn scatter(&self, ray: &Ray, rec: &HitRecord) -> (Option<Ray>, Color);
 }
 
@@ -17,7 +14,7 @@ pub struct Lambertian {
     pub albedo: Color,
 }
 
-impl MaterialBehavior for Lambertian {
+impl Material for Lambertian {
     fn scatter(&self, _: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
         let mut scatter_direction = rec.normal + Vec3::random_unit_vector();
         if scatter_direction.near_zero() {
@@ -35,7 +32,7 @@ pub struct Metal {
     pub fuzz: f32,
 }
 
-impl MaterialBehavior for Metal {
+impl Material for Metal {
     fn scatter(&self, ray: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
         let reflected = Vec3::reflect(&Vec3::unit_vector(&ray.dir), &rec.normal);
         let scattered = Ray::new(rec.p, reflected + (self.fuzz * Vec3::random_in_unit_sphere()));
@@ -61,7 +58,7 @@ fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
     return r0 + (1.0 - r0) * f32::powf(1.0 - cosine, 5.0);
 }
 
-impl MaterialBehavior for Dialectric {
+impl Material for Dialectric {
     fn scatter(&self, ray: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
         let attenuation = Color::new(1.0, 1.0, 1.0);
         let refraction_ratio = if rec.front_face { 1.0 / self.index_of_refraction } else { self.index_of_refraction };
@@ -83,13 +80,4 @@ impl MaterialBehavior for Dialectric {
 
         (Option::Some(scattered), attenuation)
     }
-}
-
-// #[derive(Debug, PartialEq)]
-#[derive(Clone, Copy)]
-#[enum_dispatch(MaterialBehavior)]
-pub enum Material {
-    Lambertian,
-    Metal,
-    Dialectric,
 }

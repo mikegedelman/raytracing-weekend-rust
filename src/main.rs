@@ -21,7 +21,7 @@ use ray::*;
 use util::*;
 use vec3::*;
 
-fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+fn hit_list<'a, H: Hittable>(hittables: &'a Vec<H>, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<'a>> {
     let mut hit_rec = Option::None;
     let mut closest_so_far = t_max;
 
@@ -86,9 +86,9 @@ fn main() -> io::Result<()> {
     println!("{} Setup...", style("[1/3]").bold().dim());
     // Image parameters
     let aspect_ratio = 3.0 / 2.0;
-    let image_width = 1200;
+    let image_width = 400;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 500;
+    let samples_per_pixel = 100;
     let max_depth = 50;
 
     // Camera
@@ -104,86 +104,91 @@ fn main() -> io::Result<()> {
 
     // Scene
     let mut world = vec![];
+    let ground_mat = Lambertian {
+        albedo: Color::new(0.5, 0.5, 0.5),
+    };
     world.push(Sphere {
         center: Point3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
-        material: Lambertian {
-            albedo: Color::new(0.5, 0.5, 0.5),
-        }.into(),
+        material: &ground_mat,
     });
-    
-    for a in -11..11 {
-        for b in -11..11 {
-            let choose_mat = random_f32();
 
-            let center = Point3::new(
-                a as f32 + 0.9 * random_f32(),
-                0.2,
-                b as f32 + 0.9 + random_f32(),
-            );
-            let radius = 0.2;
+    // for a in -11..11 {
+    //     for b in -11..11 {
+    //         let choose_mat = random_f32();
 
-            if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
-                if choose_mat < 0.8 {
-                    // diffuse
-                    let albedo = Color::random() * Color::random();
-                    let material = Lambertian {
-                        albedo,
-                    };
-                    world.push(Sphere {
-                        center,
-                        radius,
-                        material: material.into(),
-                    });
-                } else if choose_mat < 0.95 {
-                    // metal
-                    let albedo = Color::random_range(0.5, 1.0);
-                    let fuzz = random_f32_range(0.0, 0.5);
-                    let material = Metal {
-                        albedo,
-                        fuzz,
-                    };
-                    world.push(Sphere {
-                        center,
-                        radius,
-                        material: material.into(),
-                    });
-                } else {
-                    // glass
-                    let material = Dialectric {
-                        index_of_refraction: 1.5,
-                    };
-                    world.push(Sphere {
-                        center,
-                        radius,
-                        material: material.into(),
-                    });
-                }
-            }
-        }
-    }
+    //         let center = Point3::new(
+    //             a as f32 + 0.9 * random_f32(),
+    //             0.2,
+    //             b as f32 + 0.9 + random_f32(),
+    //         );
+    //         let radius = 0.2;
+
+    //         if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+    //             if choose_mat < 0.8 {
+    //                 // diffuse
+    //                 let albedo = Color::random() * Color::random();
+    //                 let material = Lambertian {
+    //                     albedo,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             } else if choose_mat < 0.95 {
+    //                 // metal
+    //                 let albedo = Color::random_range(0.5, 1.0);
+    //                 let fuzz = random_f32_range(0.0, 0.5);
+    //                 let material = Metal {
+    //                     albedo,
+    //                     fuzz,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             } else {
+    //                 // glass
+    //                 let material = Dialectric {
+    //                     index_of_refraction: 1.5,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             }
+    //         }
+    //     }
+    // }
 
     world.push(Sphere {
         center: Point3::new(0.0, 1.0, 0.0),
         radius: 1.0,
-        material: Dialectric {
+        material: &Dialectric {
             index_of_refraction: 1.5,
-        }.into(),
+        },
     });
+
+    let brown_lambertian = Lambertian {
+        albedo: Color::new(0.4, 0.2, 0.1),
+    };
     world.push(Sphere {
         center: Point3::new(-4.0, 1.0, 0.0),
         radius: 1.0,
-        material: Lambertian {
-            albedo: Color::new(0.4, 0.2, 0.1),
-        }.into(),
+        material: &brown_lambertian,
     });
+
+    let metal = Metal {
+        albedo: Color::new(0.7, 0.6, 0.5),
+        fuzz: 0.0,
+    };
     world.push(Sphere {
         center: Point3::new(4.0, 1.0, 0.0),
         radius: 1.0,
-        material: Metal {
-            albedo: Color::new(0.7, 0.6, 0.5),
-            fuzz: 0.0,
-        }.into(),
+        material: &metal,
     });
 
     // Render
@@ -192,8 +197,8 @@ fn main() -> io::Result<()> {
     let before_render = Instant::now();
     let range: Vec<i32> = (0..image_height).rev().collect();
     let rows: Vec<Vec<Vec3>> = range
-        .into_par_iter() // Use Rayon to parallelize this iterator for basically no effort
-        .progress_with(pb) // Show a progress bar of rows
+        .into_iter() // Use Rayon to parallelize this iterator for basically no effort
+        // .progress_with(pb) // Show a progress bar of rows
         .map(|j| {
             // For each row..
             (0..image_width)
