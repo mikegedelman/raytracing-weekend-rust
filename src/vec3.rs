@@ -10,9 +10,9 @@ use crate::util::*;
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Default)]
 // pub struct Vec3(pub(crate) f32, pub(crate) f32, pub(crate) f32);
 pub struct Vec3 {
-    pub(crate) x: f32,
-    pub(crate) y: f32,
-    pub(crate) z: f32,
+   x: f32,
+   y: f32,
+   z: f32,
 }
 
 pub type Point3 = Vec3;
@@ -31,6 +31,21 @@ impl Vec3 {
             y: 0.0,
             z: 0.0,
         }
+    }
+
+    #[inline]
+    pub fn x(&self) -> f32 {
+        self.x
+    }
+
+    #[inline]
+    pub fn y(&self) -> f32 {
+        self.y
+    }
+
+    #[inline]
+    pub fn z(&self) -> f32 {
+        self.z
     }
 
     #[inline]
