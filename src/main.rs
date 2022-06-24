@@ -1,3 +1,5 @@
+#![feature(portable_simd)]
+
 mod camera;
 mod hit;
 mod material;
@@ -88,7 +90,7 @@ fn main() -> io::Result<()> {
     let aspect_ratio = 3.0 / 2.0;
     let image_width = 1000;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 200;
+    let samples_per_pixel = 500;
     let max_depth = 50;
 
     // Camera
