@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::material::*;
 use crate::ray::*;
 use crate::vec3::*;
@@ -8,7 +10,7 @@ pub struct HitRecord<'a> {
     pub normal: Vec3,     // Normal pointing outwards from the object at p
     pub t: f32,           // ?? not used yet
     pub front_face: bool, // ?? not used yet
-    pub material: &'a (dyn Material + 'a),
+    pub material: Arc<dyn Material + Send + Sync + 'a>,
 }
 
 pub trait Hittable {
@@ -19,7 +21,7 @@ pub trait Hittable {
 pub struct Sphere<'a> {
     pub center: Point3,
     pub radius: f32,
-    pub material: &'a (dyn Material + 'a),
+    pub material: Arc<dyn Material + Send + Sync + 'a>,
 }
 
 impl<'a> Hittable for Sphere<'a> {
@@ -60,7 +62,7 @@ impl<'a> Hittable for Sphere<'a> {
             p,
             normal,
             front_face,
-            material: self.material.into(),
+            material: self.material.clone(),
         });
     }
 }

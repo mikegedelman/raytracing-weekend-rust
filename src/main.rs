@@ -7,6 +7,7 @@ mod vec3;
 
 use std::fs::File;
 use std::io::{self, BufWriter, Seek, Write};
+use std::sync::Arc;
 use std::time::Instant;
 
 use console::style;
@@ -45,7 +46,7 @@ fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color {
 
     match hit_list(hittables, r, 0.001, INFINITY) {
         Some(rec) => {
-            let m = rec.material;
+            let m = rec.material.clone();
             return match m.scatter(&r, &rec) {
                 (Some(scattered_ray), attenuation) => {
                     attenuation * ray_color(&scattered_ray, hittables, depth - 1)
@@ -104,13 +105,13 @@ fn main() -> io::Result<()> {
 
     // Scene
     let mut world = vec![];
-    let ground_mat = Lambertian {
-        albedo: Color::new(0.5, 0.5, 0.5),
-    };
+    // let ground_mat = ;
     world.push(Sphere {
         center: Point3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
-        material: &ground_mat,
+        material: Arc::new(Lambertian {
+            albedo: Color::new(0.5, 0.5, 0.5),
+        }),
     });
 
     // for a in -11..11 {
@@ -167,28 +168,26 @@ fn main() -> io::Result<()> {
     world.push(Sphere {
         center: Point3::new(0.0, 1.0, 0.0),
         radius: 1.0,
-        material: &Dialectric {
+        material: Arc::new(Dialectric {
             index_of_refraction: 1.5,
-        },
+        }),
     });
 
-    let brown_lambertian = Lambertian {
-        albedo: Color::new(0.4, 0.2, 0.1),
-    };
     world.push(Sphere {
         center: Point3::new(-4.0, 1.0, 0.0),
         radius: 1.0,
-        material: &brown_lambertian,
+        material: Arc::new(Lambertian {
+            albedo: Color::new(0.4, 0.2, 0.1),
+        }),
     });
 
-    let metal = Metal {
-        albedo: Color::new(0.7, 0.6, 0.5),
-        fuzz: 0.0,
-    };
     world.push(Sphere {
         center: Point3::new(4.0, 1.0, 0.0),
         radius: 1.0,
-        material: &metal,
+        material: Arc::new(Metal {
+            albedo: Color::new(0.7, 0.6, 0.5),
+            fuzz: 0.0,
+        }),
     });
 
     // Render
@@ -197,8 +196,8 @@ fn main() -> io::Result<()> {
     let before_render = Instant::now();
     let range: Vec<i32> = (0..image_height).rev().collect();
     let rows: Vec<Vec<Vec3>> = range
-        .into_iter() // Use Rayon to parallelize this iterator for basically no effort
-        // .progress_with(pb) // Show a progress bar of rows
+        .into_par_iter() // Use Rayon to parallelize this iterator for basically no effort
+        .progress_with(pb) // Show a progress bar of rows
         .map(|j| {
             // For each row..
             (0..image_width)
