@@ -18,13 +18,13 @@ pub struct Lambertian {
 }
 
 impl MaterialBehavior for Lambertian {
-    fn scatter(&self, _: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
+    fn scatter(&self, ray: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
         let mut scatter_direction = rec.normal + Vec3::random_unit_vector();
         if scatter_direction.near_zero() {
             scatter_direction = rec.normal;
         }
 
-        let scattered = Ray::new(rec.p, scatter_direction);
+        let scattered = Ray::new(rec.p, scatter_direction, ray.time);
         (Option::Some(scattered), self.albedo)
     }
 }
@@ -38,7 +38,7 @@ pub struct Metal {
 impl MaterialBehavior for Metal {
     fn scatter(&self, ray: &Ray, rec: &HitRecord) -> (Option<Ray>, Color) {
         let reflected = Vec3::reflect(&Vec3::unit_vector(&ray.dir), &rec.normal);
-        let scattered = Ray::new(rec.p, reflected + (self.fuzz * Vec3::random_in_unit_sphere()));
+        let scattered = Ray::new(rec.p, reflected + (self.fuzz * Vec3::random_in_unit_sphere()), ray.time);
 
         if Vec3::dot(&scattered.dir, &rec.normal) > 0.0 {
             (Option::Some(scattered), self.albedo)
@@ -79,7 +79,7 @@ impl MaterialBehavior for Dialectric {
         };
 
         let refracted = Vec3::refract(&direction, &rec.normal, refraction_ratio);
-        let scattered = Ray::new(rec.p, refracted);
+        let scattered = Ray::new(rec.p, refracted, ray.time);
 
         (Option::Some(scattered), attenuation)
     }

@@ -1,6 +1,6 @@
 use crate::ray::*;
 use crate::vec3::*;
-use crate::util::degrees_to_radians;
+use crate::util::*;
 
 pub struct Camera {
     origin: Point3,
@@ -11,6 +11,8 @@ pub struct Camera {
     v: Vec3,
     // w: Vec3,
     lens_radius: f32,
+    time0: f32,
+    time1: f32,
 }
 
 
@@ -23,6 +25,8 @@ impl Camera {
         aspect_ratio: f32,
         aperture: f32,
         focus_dist: f32,
+        time0: f32,
+        time1: f32,
     ) -> Camera {
         let theta = degrees_to_radians(vfov);
         let h = (theta / 2.0).tan();
@@ -52,6 +56,8 @@ impl Camera {
             v,
             // w,
             lens_radius,
+            time0,
+            time1,
         }
     }
 
@@ -60,7 +66,8 @@ impl Camera {
         let offset = rd.x() * self.u + rd.y() * self.v;
         Ray::new(
             self.origin + offset,
-            self.lower_left_corner + (s * self.horizontal) + (t * self.vertical) - self.origin - offset
+            self.lower_left_corner + (s * self.horizontal) + (t * self.vertical) - self.origin - offset,
+            random_f32_range(self.time0, self.time1),
         )
     }
 }
