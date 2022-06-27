@@ -1,3 +1,5 @@
+#![feature(portable_simd)]
+
 mod camera;
 mod hit;
 mod material;
@@ -58,7 +60,7 @@ fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color {
 
     // Background gradient
     let unit_direction = Vec3::unit_vector(&r.dir);
-    let t = 0.5 * (unit_direction.y + 1.0);
+    let t = 0.5 * (unit_direction.y() + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + (t * Color::new(0.5, 0.7, 1.0))
 }
 
@@ -69,9 +71,9 @@ fn write_color(
 ) -> io::Result<()> {
     // sqrt: gamma correction is raise to the power of 1/gamma, and we're using gamma=2, so pow(1/2) -> sqrt
     let scale = 1.0 / samples_per_pixel as f32;
-    let r = f32::sqrt(color.x * scale);
-    let b = f32::sqrt(color.y * scale);
-    let g = f32::sqrt(color.z * scale);
+    let r = f32::sqrt(color.x() * scale);
+    let b = f32::sqrt(color.y() * scale);
+    let g = f32::sqrt(color.z() * scale);
 
     write!(
         w,
@@ -86,7 +88,7 @@ fn main() -> io::Result<()> {
     println!("{} Setup...", style("[1/3]").bold().dim());
     // Image parameters
     let aspect_ratio = 3.0 / 2.0;
-    let image_width = 1200;
+    let image_width = 1000;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 500;
     let max_depth = 50;
@@ -111,57 +113,57 @@ fn main() -> io::Result<()> {
             albedo: Color::new(0.5, 0.5, 0.5),
         }.into(),
     });
-    
-    for a in -11..11 {
-        for b in -11..11 {
-            let choose_mat = random_f32();
 
-            let center = Point3::new(
-                a as f32 + 0.9 * random_f32(),
-                0.2,
-                b as f32 + 0.9 + random_f32(),
-            );
-            let radius = 0.2;
+    // for a in -11..11 {
+    //     for b in -11..11 {
+    //         let choose_mat = random_f32();
 
-            if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
-                if choose_mat < 0.8 {
-                    // diffuse
-                    let albedo = Color::random() * Color::random();
-                    let material = Lambertian {
-                        albedo,
-                    };
-                    world.push(Sphere {
-                        center,
-                        radius,
-                        material: material.into(),
-                    });
-                } else if choose_mat < 0.95 {
-                    // metal
-                    let albedo = Color::random_range(0.5, 1.0);
-                    let fuzz = random_f32_range(0.0, 0.5);
-                    let material = Metal {
-                        albedo,
-                        fuzz,
-                    };
-                    world.push(Sphere {
-                        center,
-                        radius,
-                        material: material.into(),
-                    });
-                } else {
-                    // glass
-                    let material = Dialectric {
-                        index_of_refraction: 1.5,
-                    };
-                    world.push(Sphere {
-                        center,
-                        radius,
-                        material: material.into(),
-                    });
-                }
-            }
-        }
-    }
+    //         let center = Point3::new(
+    //             a as f32 + 0.9 * random_f32(),
+    //             0.2,
+    //             b as f32 + 0.9 + random_f32(),
+    //         );
+    //         let radius = 0.2;
+
+    //         if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+    //             if choose_mat < 0.8 {
+    //                 // diffuse
+    //                 let albedo = Color::random() * Color::random();
+    //                 let material = Lambertian {
+    //                     albedo,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             } else if choose_mat < 0.95 {
+    //                 // metal
+    //                 let albedo = Color::random_range(0.5, 1.0);
+    //                 let fuzz = random_f32_range(0.0, 0.5);
+    //                 let material = Metal {
+    //                     albedo,
+    //                     fuzz,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             } else {
+    //                 // glass
+    //                 let material = Dialectric {
+    //                     index_of_refraction: 1.5,
+    //                 };
+    //                 world.push(Sphere {
+    //                     center,
+    //                     radius,
+    //                     material: material.into(),
+    //                 });
+    //             }
+    //         }
+    //     }
+    // }
 
     world.push(Sphere {
         center: Point3::new(0.0, 1.0, 0.0),
