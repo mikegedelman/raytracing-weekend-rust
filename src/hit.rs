@@ -15,6 +15,12 @@ pub trait Hittable {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
 }
 
+impl<W: Hittable + ?Sized> Hittable for Box<W> {
+    #[inline]
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> { (**self).hit(r, t_min, t_max) }
+    // fn write(&mut self, buf: &[u8]) -> io::Result<usize> { (*self).write(buf) }
+}
+
 // #[derive(Debug, PartialEq)]
 pub struct Sphere {
     pub center: Point3,

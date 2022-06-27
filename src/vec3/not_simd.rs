@@ -1,7 +1,6 @@
 use core::{fmt, ops::*};
 use std::iter::Sum;
 
-use crate::util::*;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Default)]
 // pub struct Vec3(pub(crate) f32, pub(crate) f32, pub(crate) f32);

@@ -107,7 +107,7 @@ fn main() -> io::Result<()> {
     );
 
     // Scene
-    let mut world: Vec<Box<dyn Hittable>> = vec![];
+    let mut world: Vec<Box<dyn Hittable + Send + Sync>> = vec![];
     world.push(Box::new(Sphere {
         center: Point3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
@@ -185,7 +185,7 @@ fn main() -> io::Result<()> {
             albedo: Color::new(0.4, 0.2, 0.1),
         }.into(),
     }));
-    world.push(Box::new((Sphere {
+    world.push(Box::new(Sphere {
         center: Point3::new(4.0, 1.0, 0.0),
         radius: 1.0,
         material: Metal {
