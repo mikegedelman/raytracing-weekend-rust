@@ -1,6 +1,7 @@
 use crate::material::*;
 use crate::ray::*;
 use crate::vec3::*;
+use crate::bvh::*;
 
 // #[derive(Debug, PartialEq)]
 pub struct HitRecord {
@@ -13,12 +14,13 @@ pub struct HitRecord {
 
 pub trait Hittable {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
+    fn bounding_box(&self, time0: f32, time1: f32) -> Option<AABB>;
 }
 
 impl<W: Hittable + ?Sized> Hittable for Box<W> {
     #[inline]
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> { (**self).hit(r, t_min, t_max) }
-    // fn write(&mut self, buf: &[u8]) -> io::Result<usize> { (*self).write(buf) }
+    fn bounding_box(&self, time0: f32, time1: f32) -> Option<AABB> { (**self).bounding_box(time0, time1) }
 }
 
 // #[derive(Debug, PartialEq)]
@@ -68,6 +70,13 @@ impl Hittable for Sphere{
             front_face,
             material: self.material.into(),
         });
+    }
+
+    fn bounding_box(&self, time0: f32, time1: f32) -> Option<AABB> {
+        Some(AABB {
+            minimum: self.center - Vec3::new(self.radius, self.radius, self.radius),
+            maximum: self.center + Vec3::new(self.radius, self.radius, self.radius),
+        })
     }
 }
 
@@ -128,4 +137,24 @@ impl Hittable for MovingSphere{
             material: self.material.into(),
         });
     }
+
+    fn bounding_box(&self, time0: f32, time1: f32) -> Option<AABB> {
+        let box0 = AABB {
+            minimum: self.center(time0  ) - Vec3::new(self.radius, self.radius, self.radius),
+            maximum: self.center(time0) + Vec3::new(self.radius, self.radius, self.radius),
+        };
+
+        let box1 = AABB {
+            minimum: self.center(time1 ) - Vec3::new(self.radius, self.radius, self.radius),
+            maximum: self.center(time1) + Vec3::new(self.radius, self.radius, self.radius),
+        };
+
+        Some(AABB::surrounding_box(&box0, &box1))
+    }
 }
+
+
+struct BVHNode {
+
+}
+    

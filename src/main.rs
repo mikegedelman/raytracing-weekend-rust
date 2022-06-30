@@ -6,6 +6,7 @@ mod material;
 mod ray;
 mod util;
 mod vec3;
+mod bvh;
 
 use std::fs::File;
 use std::io::{self, BufWriter, Seek, Write};
@@ -22,6 +23,7 @@ use material::*;
 use ray::*;
 use util::*;
 use vec3::*;
+use bvh::*;
 
 fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
     let mut hit_rec = Option::None;
@@ -38,6 +40,34 @@ fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32) ->
     }
 
     return hit_rec;
+}
+
+fn hittables_bounding_box<H: Hittable>(objects: &Vec<H>, time0: f32, time1: f32) -> Option<AABB> {
+    if objects.len() < 1 {
+        return None;
+    }
+
+    let mut ret_box: Option<AABB> = None;
+
+    for object in objects {
+        match object.bounding_box(time0, time1) {
+            Some(tmp_box) => {
+                match ret_box {
+                    Some(existing_box) => {
+                        ret_box = Some(AABB::surrounding_box(&existing_box, &tmp_box))
+                    },
+                    None => {
+                        ret_box = Some(tmp_box);
+                    }
+                }
+            }
+            None => {
+                return None
+            },
+        }
+    }
+
+    return ret_box;
 }
 
 fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color {
