@@ -1,3 +1,5 @@
+use enum_dispatch::enum_dispatch;
+
 use crate::material::*;
 use crate::ray::*;
 use crate::vec3::*;
@@ -12,25 +14,20 @@ pub struct HitRecord {
     pub material: Material,
 }
 
-pub trait Hittable {
+#[enum_dispatch]
+pub trait HittableBehavior {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
     fn bounding_box(&self, time0: f32, time1: f32) -> Option<AABB>;
 }
 
-impl<W: Hittable + ?Sized> Hittable for Box<W> {
-    #[inline]
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> { (**self).hit(r, t_min, t_max) }
-    fn bounding_box(&self, time0: f32, time1: f32) -> Option<AABB> { (**self).bounding_box(time0, time1) }
-}
-
-// #[derive(Debug, PartialEq)]
+#[derive(Clone, Copy)]
 pub struct Sphere {
     pub center: Point3,
     pub radius: f32,
     pub material: Material,
 }
 
-impl Hittable for Sphere{
+impl HittableBehavior for Sphere{
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         // Calculate the discriminant (the part under the sqrt) of the quadratic equation.
         let oc = r.orig - self.center;
@@ -80,7 +77,7 @@ impl Hittable for Sphere{
     }
 }
 
-// #[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct MovingSphere {
     pub center0: Point3,
     pub center1: Point3,
@@ -96,7 +93,7 @@ impl MovingSphere {
     }
 }
 
-impl Hittable for MovingSphere{
+impl HittableBehavior for MovingSphere{
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         // Calculate the discriminant (the part under the sqrt) of the quadratic equation.
         let oc = r.orig - self.center(r.time);
@@ -155,6 +152,12 @@ impl Hittable for MovingSphere{
 
 
 struct BVHNode {
-
-}
     
+}
+
+#[derive(Clone, Copy)]
+#[enum_dispatch(HittableBehavior)]
+pub enum Hittable {
+    Sphere,
+    MovingSphere,
+}
