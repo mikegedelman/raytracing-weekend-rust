@@ -23,7 +23,7 @@ use ray::*;
 use util::*;
 use vec3::*;
 
-fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+fn hit_list(hittables: &Vec<Hittable>, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
     let mut hit_rec = Option::None;
     let mut closest_so_far = t_max;
 
@@ -40,7 +40,7 @@ fn hit_list<H: Hittable>(hittables: &Vec<H>, r: &Ray, t_min: f32, t_max: f32) ->
     return hit_rec;
 }
 
-fn ray_color<H: Hittable>(r: &Ray, hittables: &Vec<H>, depth: i32) -> Color {
+fn ray_color(r: &Ray, hittables: &Vec<Hittable>, depth: i32) -> Color {
     if depth <= 0 {
         return Color::zero();
     }
@@ -107,14 +107,14 @@ fn main() -> io::Result<()> {
     );
 
     // Scene
-    let mut world: Vec<Box<dyn Hittable + Send + Sync>> = vec![];
-    world.push(Box::new(Sphere {
+    let mut world: Vec<Hittable> = vec![];
+    world.push(Sphere {
         center: Point3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
         material: Lambertian {
             albedo: Color::new(0.5, 0.5, 0.5),
         }.into(),
-    }));
+    }.into());
 
     for a in -11..11 {
         for b in -11..11 {
@@ -135,14 +135,14 @@ fn main() -> io::Result<()> {
                         albedo,
                     };
                     let center1 = center + Vec3::new(0.0, random_f32_range(0.0, 0.5), 0.0);
-                    world.push(Box::new(MovingSphere {
+                    world.push(MovingSphere {
                         center0: center,
                         center1,
                         time0: 0.0,
                         time1: 1.0,
                         radius,
                         material: material.into(),
-                    }));
+                    }.into());
                 } else if choose_mat < 0.95 {
                     // metal
                     let albedo = Color::random_range(0.5, 1.0);
@@ -151,48 +151,48 @@ fn main() -> io::Result<()> {
                         albedo,
                         fuzz,
                     };
-                    world.push(Box::new(Sphere {
+                    world.push(Sphere {
                         center,
                         radius,
                         material: material.into(),
-                    }));
+                    }.into());
                 } else {
                     // glass
                     let material = Dialectric {
                         index_of_refraction: 1.5,
                     };
-                    world.push(Box::new(Sphere {
+                    world.push(Sphere {
                         center,
                         radius,
                         material: material.into(),
-                    }));
+                    }.into());
                 }
             }
         }
     }
 
-    world.push(Box::new(Sphere {
+    world.push(Sphere {
         center: Point3::new(0.0, 1.0, 0.0),
         radius: 1.0,
         material: Dialectric {
             index_of_refraction: 1.5,
         }.into(),
-    }));
-    world.push(Box::new(Sphere {
+    }.into());
+    world.push(Sphere {
         center: Point3::new(-4.0, 1.0, 0.0),
         radius: 1.0,
         material: Lambertian {
             albedo: Color::new(0.4, 0.2, 0.1),
         }.into(),
-    }));
-    world.push(Box::new(Sphere {
+    }.into());
+    world.push(Sphere {
         center: Point3::new(4.0, 1.0, 0.0),
         radius: 1.0,
         material: Metal {
             albedo: Color::new(0.7, 0.6, 0.5),
             fuzz: 0.0,
         }.into(),
-    }));
+    }.into());
 
     // Render
     println!("{} Render...", style("[2/3]").bold().dim());
