@@ -93,4 +93,8 @@ impl Vec3 {
 
         r_out_perp + r_out_parallel
     }
+
+    pub fn to_vec(self) -> Vec<u8> {
+        vec![self.x() as u8, self.y() as u8, self.z() as u8]
+    }
 }

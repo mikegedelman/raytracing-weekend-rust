@@ -21,27 +21,33 @@ use camera::Camera;
 use hit::Hittable;
 use ray::ray_color;
 use util::{clamp, random_f32};
-use vec3::{Color, Point3, Vec3};
+use vec3::{Color, Point3};
 
 use self::scenes::raytracing_weekend_scene;
 
-fn write_color(
-    w: &mut BufWriter<&mut File>,
-    color: Color,
-    samples_per_pixel: i32,
-) -> io::Result<()> {
+fn post_process(color: Color, samples_per_pixel: i32) -> Vec<u8> {
     // sqrt: gamma correction is raise to the power of 1/gamma, and we're using gamma=2, so pow(1/2) -> sqrt
     let scale = 1.0 / samples_per_pixel as f32;
     let r = f32::sqrt(color.x() * scale);
     let b = f32::sqrt(color.y() * scale);
     let g = f32::sqrt(color.z() * scale);
 
+    vec![
+        (256.0 * clamp(r, 0.0, 0.999)) as u8,
+        (256.0 * clamp(b, 0.0, 0.999)) as u8,
+        (256.0 * clamp(g, 0.0, 0.999)) as u8,
+    ]
+}
+
+fn write_color(
+    w: &mut BufWriter<&mut File>,
+    bytes: Vec<u8>,
+    // samples_per_pixel: i32,
+) -> io::Result<()> {
     write!(
         w,
         "{} {} {}\n",
-        (256.0 * clamp(r, 0.0, 0.999)) as u32,
-        (256.0 * clamp(b, 0.0, 0.999)) as u32,
-        (256.0 * clamp(g, 0.0, 0.999)) as u32
+        bytes[0], bytes[1], bytes[2]
     )
 }
 
@@ -74,9 +80,9 @@ fn render(
     samples_per_pixel: i32,
     max_depth: i32,
     pb: ProgressBar,
-) -> Vec<Vec<Vec3>> {
+) ->Vec<u8> {
     let range: Vec<i32> = (0..image_height).rev().collect();
-    range
+    let intermediate: Vec<Vec<Vec<u8>>> = range
         .into_par_iter() // Use Rayon to parallelize this iterator for basically no effort
         .progress_with(pb) // Show a progress bar of rows
         .map(|j| {
@@ -94,9 +100,14 @@ fn render(
                         a + ray_color(&r, &objects, max_depth) // Determine the color of the ray reflected back at the camera
                     })
                 })
+                .map(|color| post_process(color, samples_per_pixel))
                 .collect()
         })
-        .collect()
+        .collect();
+
+    let flatten1: Vec<Vec<u8>> = intermediate.into_iter().flatten().collect();
+    let flatten2: Vec<u8> = flatten1.into_iter().flatten().collect();
+    flatten2
 }
 
 fn main() -> io::Result<()> {
@@ -115,7 +126,7 @@ fn main() -> io::Result<()> {
     println!("{} Render...", style("[2/3]").bold().dim());
     let pb = ProgressBar::new(image_height as u64);
     let before_render = Instant::now();
-    let rows = render(
+    let pixels = render(
         &world,
         &camera,
         image_width,
@@ -131,9 +142,16 @@ fn main() -> io::Result<()> {
     let mut writer = BufWriter::new(&mut f);
 
     write!(&mut writer, "P3\n{} {}\n255\n", image_width, image_height)?;
-    for row in rows {
-        for color in row {
-            write_color(&mut writer, color, samples_per_pixel)?;
+    let mut counter = 0;
+    for byte in pixels {
+        // write_color(&mut writer, bytes_vec)?;
+        write!(&mut writer, "{}", byte)?;
+        counter += 1;
+        if counter == 3 {
+            write!(writer, "\n")?;
+            counter = 0;
+        } else {
+            write!(writer, " ")?;
         }
     }
     writer.flush()?;

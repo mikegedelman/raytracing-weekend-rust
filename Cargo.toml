@@ -8,11 +8,12 @@ default = ["simd"]
 simd = []
 
 [dependencies]
+console = "*"
+enum_dispatch = "*"
+image = "*"
+indicatif = {version = "*", features = ["rayon"]}
 rand = "*"
 rayon = "*"
-enum_dispatch = "*"
-console = "*"
-indicatif = {version = "*", features = ["rayon"]}
 
 [profile.dev]
 opt-level = 3
