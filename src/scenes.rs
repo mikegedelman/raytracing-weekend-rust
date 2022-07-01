@@ -113,3 +113,55 @@ pub fn raytracing_weekend_scene() -> Vec<Hittable> {
 
     vec![BVHNode::new(&world, 0.0, 1.0).into()]
 }
+
+pub fn raytracing_weekend_scene_empty() -> Vec<Hittable> {
+    let mut world: Vec<Hittable> = vec![];
+    world.push(
+        Sphere {
+            center: Point3::new(0.0, -1000.0, 0.0),
+            radius: 1000.0,
+            material: Lambertian {
+                albedo: Color::new(0.5, 0.5, 0.5),
+            }
+            .into(),
+        }
+        .into(),
+    );
+
+    world.push(
+        Sphere {
+            center: Point3::new(0.0, 1.0, 0.0),
+            radius: 1.0,
+            material: Dialectric {
+                index_of_refraction: 1.5,
+            }
+            .into(),
+        }
+        .into(),
+    );
+    world.push(
+        Sphere {
+            center: Point3::new(-4.0, 1.0, 0.0),
+            radius: 1.0,
+            material: Lambertian {
+                albedo: Color::new(0.4, 0.2, 0.1),
+            }
+            .into(),
+        }
+        .into(),
+    );
+    world.push(
+        Sphere {
+            center: Point3::new(4.0, 1.0, 0.0),
+            radius: 1.0,
+            material: Metal {
+                albedo: Color::new(0.7, 0.6, 0.5),
+                fuzz: 0.0,
+            }
+            .into(),
+        }
+        .into(),
+    );
+
+    vec![BVHNode::new(&world, 0.0, 1.0).into()]
+}

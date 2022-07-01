@@ -8,6 +8,7 @@ default = ["simd"]
 simd = []
 
 [dependencies]
+clap = {version = "*", features = ["derive"]}
 console = "*"
 enum_dispatch = "*"
 image = "*"

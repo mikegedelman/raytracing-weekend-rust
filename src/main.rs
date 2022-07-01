@@ -12,7 +12,9 @@ use std::fs::File;
 use std::io::{self, BufWriter, Seek, Write};
 use std::time::Instant;
 
+use clap::{Parser};
 use console::style;
+use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 use indicatif::{HumanBytes, ParallelProgressIterator, ProgressBar};
 use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
@@ -23,7 +25,7 @@ use ray::ray_color;
 use util::{clamp, random_f32};
 use vec3::{Color, Point3};
 
-use self::scenes::raytracing_weekend_scene;
+use self::scenes::*;
 
 fn post_process(color: Color, samples_per_pixel: i32) -> Vec<u8> {
     // sqrt: gamma correction is raise to the power of 1/gamma, and we're using gamma=2, so pow(1/2) -> sqrt
@@ -37,18 +39,6 @@ fn post_process(color: Color, samples_per_pixel: i32) -> Vec<u8> {
         (256.0 * clamp(b, 0.0, 0.999)) as u8,
         (256.0 * clamp(g, 0.0, 0.999)) as u8,
     ]
-}
-
-fn write_color(
-    w: &mut BufWriter<&mut File>,
-    bytes: Vec<u8>,
-    // samples_per_pixel: i32,
-) -> io::Result<()> {
-    write!(
-        w,
-        "{} {} {}\n",
-        bytes[0], bytes[1], bytes[2]
-    )
 }
 
 fn make_camera(aspect_ratio: f32) -> Camera {
@@ -80,7 +70,7 @@ fn render(
     samples_per_pixel: i32,
     max_depth: i32,
     pb: ProgressBar,
-) ->Vec<u8> {
+) -> Vec<u8> {
     let range: Vec<i32> = (0..image_height).rev().collect();
     let intermediate: Vec<Vec<Vec<u8>>> = range
         .into_par_iter() // Use Rayon to parallelize this iterator for basically no effort
@@ -105,22 +95,72 @@ fn render(
         })
         .collect();
 
+    // TODO: gosh this is ugly
     let flatten1: Vec<Vec<u8>> = intermediate.into_iter().flatten().collect();
     let flatten2: Vec<u8> = flatten1.into_iter().flatten().collect();
     flatten2
 }
 
+fn parse_aspect_ratio(s: &str) -> f32 {
+    let numbers: Vec<&str> = s.split(":").collect();
+    let numerator = numbers[0].parse::<f32>().unwrap();
+    let denominator = numbers[1].parse::<f32>().unwrap();
+    numerator / denominator
+}
+
+fn resolve_image_format(s: &str) -> ImageOutputFormat {
+    match s {
+        "png" => ImageOutputFormat::Png,
+        "jpg" => ImageOutputFormat::Jpeg(255),
+        "jpeg" => ImageOutputFormat::Jpeg(255),
+        "gif" => ImageOutputFormat::Gif,
+        "bmp" => ImageOutputFormat::Bmp,
+        "tiff" => ImageOutputFormat::Tiff,
+        _ => panic!("Unsupported image format: {}", s),
+    }
+}
+
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Aspect ratio of the image
+    #[clap(short = 'a', long, value_parser, default_value = "3:2")]
+    aspect_ratio: String,
+
+    /// Image width. Note that image height will be computed from this and aspect ratio.
+    #[clap(short = 'w', long, value_parser, default_value_t = 600)]
+    image_width: i32,
+
+    /// Samples per pixel
+    #[clap(short, long, value_parser, default_value_t = 100)]
+    samples: i32,
+
+    /// Max depth: number of bounces before a ray dies
+    #[clap(short = 'd', long, value_parser, default_value_t = 50)]
+    max_depth: i32,
+
+    #[clap(short = 'o', long, value_parser, default_value = "image.png")]
+    output_file: String,
+
+    #[clap(short = 'f', long, value_parser, default_value = "png")]
+    output_format: String,
+}
+
+
 fn main() -> io::Result<()> {
+    let args = Args::parse();
+
     println!("{} Setup...", style("[1/3]").bold().dim());
     // Image parameters
-    let aspect_ratio = 3.0 / 2.0;
-    let image_width = 500;
+    let aspect_ratio = parse_aspect_ratio(&args.aspect_ratio);
+    let image_width = args.image_width;
     let image_height = (image_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 100;
-    let max_depth = 50;
+    let samples_per_pixel = args.samples;
+    let max_depth = args.max_depth;
 
     let camera = make_camera(aspect_ratio);
-    let world = raytracing_weekend_scene();
+    let world = raytracing_weekend_scene_empty();
 
     // Render
     println!("{} Render...", style("[2/3]").bold().dim());
@@ -138,22 +178,14 @@ fn main() -> io::Result<()> {
     let render_elapsed = before_render.elapsed();
 
     println!("{} Write to disk...", style("[3/3]").bold().dim());
-    let mut f = File::create("./image.ppm").unwrap();
+    let mut f = File::create(args.output_file).unwrap();
     let mut writer = BufWriter::new(&mut f);
-
-    write!(&mut writer, "P3\n{} {}\n255\n", image_width, image_height)?;
-    let mut counter = 0;
-    for byte in pixels {
-        // write_color(&mut writer, bytes_vec)?;
-        write!(&mut writer, "{}", byte)?;
-        counter += 1;
-        if counter == 3 {
-            write!(writer, "\n")?;
-            counter = 0;
-        } else {
-            write!(writer, " ")?;
-        }
-    }
+    let img_buffer: RgbImage =
+        ImageBuffer::from_vec(image_width as u32, image_height as u32, pixels).unwrap();
+    let img_format = resolve_image_format(&args.output_format);
+    img_buffer
+        .write_to(&mut writer, img_format)
+        .unwrap();
     writer.flush()?;
 
     println!("Complete!");
