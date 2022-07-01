@@ -1,4 +1,3 @@
-
 #[cfg(feature = "simd")]
 mod simd;
 #[cfg(feature = "simd")]
@@ -9,13 +8,13 @@ mod not_simd;
 #[cfg(not(feature = "simd"))]
 pub use self::not_simd::Vec3;
 
-use crate::util::*;
+use crate::util::{random_f32, random_f32_range};
 
 pub type Point3 = Vec3;
 pub type Color = Vec3;
 
+// Functionality common to both SIMD and non-SIMD
 impl Vec3 {
-
     #[inline]
     pub fn unit_vector(v: &Self) -> Self {
         (*v) / v.length()
@@ -29,10 +28,10 @@ impl Vec3 {
     #[inline]
     pub fn random_range(min: f32, max: f32) -> Vec3 {
         Vec3::new(
-                random_f32_range(min, max),
-                random_f32_range(min, max),
-                random_f32_range(min, max),
-            )
+            random_f32_range(min, max),
+            random_f32_range(min, max),
+            random_f32_range(min, max),
+        )
     }
 
     pub fn random_in_unit_sphere() -> Vec3 {
@@ -45,10 +44,13 @@ impl Vec3 {
         }
     }
 
-
     pub fn random_in_unit_disk() -> Vec3 {
         loop {
-            let p = Vec3::new(random_f32_range(-1.0, 1.0), random_f32_range(-1.0, 1.0), 0.0);
+            let p = Vec3::new(
+                random_f32_range(-1.0, 1.0),
+                random_f32_range(-1.0, 1.0),
+                0.0,
+            );
             if p.length_squared() >= 1.0 {
                 continue;
             }
@@ -86,7 +88,7 @@ impl Vec3 {
         let n = *nr;
 
         let cos_theta = f32::min(Vec3::dot(&(-uv), &n), 1.0);
-        let r_out_perp = etai_over_etat * (uv + cos_theta*n);
+        let r_out_perp = etai_over_etat * (uv + cos_theta * n);
         let r_out_parallel = -f32::sqrt((1.0 - r_out_perp.length_squared()).abs()) * n;
 
         r_out_perp + r_out_parallel

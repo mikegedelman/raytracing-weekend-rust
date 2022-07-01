@@ -1,6 +1,6 @@
-use crate::ray::*;
-use crate::vec3::*;
-use crate::util::*;
+use crate::ray::Ray;
+use crate::util::{degrees_to_radians, random_f32_range};
+use crate::vec3::{Point3, Vec3};
 
 pub struct Camera {
     origin: Point3,
@@ -14,7 +14,6 @@ pub struct Camera {
     time0: f32,
     time1: f32,
 }
-
 
 impl Camera {
     pub fn new(
@@ -37,13 +36,10 @@ impl Camera {
         let u = Vec3::unit_vector(&Vec3::cross(&vup, &w));
         let v = Vec3::cross(&w, &u);
 
-        // let focal_length = 1.0;
-
         let origin = lookfrom;
         let horizontal = focus_dist * viewport_width * u;
         let vertical = focus_dist * viewport_height * v;
-        let lower_left_corner =
-            origin - horizontal / 2.0 - vertical / 2.0 - focus_dist * w;
+        let lower_left_corner = origin - horizontal / 2.0 - vertical / 2.0 - focus_dist * w;
 
         let lens_radius = aperture / 2.0;
 
@@ -66,7 +62,9 @@ impl Camera {
         let offset = rd.x() * self.u + rd.y() * self.v;
         Ray::new(
             self.origin + offset,
-            self.lower_left_corner + (s * self.horizontal) + (t * self.vertical) - self.origin - offset,
+            self.lower_left_corner + (s * self.horizontal) + (t * self.vertical)
+                - self.origin
+                - offset,
             random_f32_range(self.time0, self.time1),
         )
     }

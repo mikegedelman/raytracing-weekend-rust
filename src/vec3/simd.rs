@@ -1,22 +1,25 @@
 use core::{fmt, ops::*};
 use std::iter::Sum;
-use std::simd::{f32x4,Simd};
+use std::simd::{f32x4, Simd};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Default)]
 pub struct Vec3 {
-   val: f32x4
+    val: f32x4,
 }
-
 
 impl Vec3 {
     #[inline]
     pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Self { val: Simd::from([x, y, z, 0.0]) }
+        Self {
+            val: Simd::from([x, y, z, 0.0]),
+        }
     }
 
     #[inline]
     pub fn zero() -> Self {
-        Self { val: Simd::from([0.0, 0.0, 0.0, 0.0]) }
+        Self {
+            val: Simd::from([0.0, 0.0, 0.0, 0.0]),
+        }
     }
 
     #[inline]
@@ -52,7 +55,6 @@ impl Vec3 {
             ]),
         }
     }
-
 }
 
 // Custom impl for Debug instead of the derive here, otherwise
@@ -60,10 +62,10 @@ impl Vec3 {
 impl fmt::Debug for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Vec3")
-         .field("x", &self.val[0])
-         .field("y", &self.val[1])
-         .field("z", &self.val[2])
-         .finish()
+            .field("x", &self.val[0])
+            .field("y", &self.val[1])
+            .field("z", &self.val[2])
+            .finish()
     }
 }
 
@@ -87,7 +89,7 @@ impl Div<Vec3> for Vec3 {
     #[inline]
     fn div(self, other: Self) -> Self {
         Self {
-            val: self.val / other.val
+            val: self.val / other.val,
         }
     }
 }
@@ -104,7 +106,7 @@ impl Div<f32> for Vec3 {
     #[inline]
     fn div(self, other: f32) -> Self {
         Self {
-            val: self.val / Simd::from([other, other, other, other])
+            val: self.val / Simd::from([other, other, other, other]),
         }
     }
 }
@@ -121,7 +123,7 @@ impl Mul<Vec3> for Vec3 {
     #[inline]
     fn mul(self, other: Self) -> Self {
         Self {
-            val: self.val * other.val
+            val: self.val * other.val,
         }
     }
 }
@@ -133,13 +135,12 @@ impl MulAssign<Vec3> for Vec3 {
     }
 }
 
-
 impl Mul<Vec3> for f32 {
     type Output = Vec3;
     #[inline]
     fn mul(self, other: Vec3) -> Vec3 {
         Vec3 {
-            val: other.val * Simd::from([self, self, self, self])
+            val: other.val * Simd::from([self, self, self, self]),
         }
     }
 }
@@ -185,7 +186,7 @@ impl Add for Vec3 {
     #[inline]
     fn add(self, other: Self) -> Self {
         Self {
-            val: self.val + other.val
+            val: self.val + other.val,
         }
     }
 }
@@ -202,7 +203,7 @@ impl Sub for Vec3 {
     #[inline]
     fn sub(self, other: Self) -> Self {
         Self {
-            val: self.val - other.val
+            val: self.val - other.val,
         }
     }
 }
@@ -219,9 +220,7 @@ impl Neg for Vec3 {
 
     #[inline]
     fn neg(self) -> Self {
-        Self {
-            val: -self.val
-        }
+        Self { val: -self.val }
     }
 }
 

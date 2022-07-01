@@ -1,15 +1,13 @@
 use core::{fmt, ops::*};
 use std::iter::Sum;
 
-
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Default)]
 // pub struct Vec3(pub(crate) f32, pub(crate) f32, pub(crate) f32);
 pub struct Vec3 {
-   x: f32,
-   y: f32,
-   z: f32,
+    x: f32,
+    y: f32,
+    z: f32,
 }
-
 
 impl Vec3 {
     #[inline]
